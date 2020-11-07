@@ -4,8 +4,6 @@ defmodule OutboxEx do
 
   defmacro __using__(opts) do
     quote do
-      alias OutboxEx.Storage.Event
-
       def start_link(opts \\ []) do
         import Supervisor.Spec, warn: false
 
@@ -14,7 +12,7 @@ defmodule OutboxEx do
         config = config()
 
         children = [
-          {config.relay_adapter, config}
+          {config.relay_adapter.__struct__, config}
         ]
 
         opts = [strategy: :one_for_one, name: name]
@@ -32,14 +30,17 @@ defmodule OutboxEx do
         }
       end
 
-      def enqueue(event) do
-        %Event{}
-        |> Event.changeset(event)
-        |> config().repo.insert()
-      end
+      def enqueue(event), do: OutboxEx.Storage.enqueue(config(), event)
 
       def config do
-        OutboxEx.Config.load(unquote(opts[:otp_app]), __MODULE__)
+        build_adapter = fn {mod, opts} ->
+          struct!(mod, opts)
+        end
+
+        unquote(opts[:otp_app])
+        |> OutboxEx.Config.load(__MODULE__)
+        |> Map.update!(:relay_adapter, build_adapter)
+        |> Map.update!(:sink_adapters, &Enum.map(&1, build_adapter))
       end
     end
   end

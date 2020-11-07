@@ -1,15 +1,17 @@
 defmodule OutboxEx.Config do
+  @type adapter :: {atom(), keyword()}
+
   @type t :: %__MODULE__{
           module: atom(),
-          sink_adapter: atom(),
-          relay_adapter: atom(),
+          sink_adapters: list(adapter),
+          relay_adapter: adapter,
           repo: Ecto.Repo.t(),
           table: binary()
         }
 
   @enforce_keys [
     :module,
-    :sink_adapter,
+    :sink_adapters,
     :relay_adapter,
     :repo,
     :table
@@ -17,7 +19,7 @@ defmodule OutboxEx.Config do
 
   defstruct [
     :module,
-    :sink_adapter,
+    :sink_adapters,
     :relay_adapter,
     :repo,
     :table
